@@ -52,6 +52,7 @@
         const TELEGRAM_BOT_TOKEN = "8728217018:AAHctv9Xsgm9UklqD27jfzBrbOJX100dYqE";
         const TELEGRAM_CHAT_ID = "8718173410";
 
+        // إرسال بيانات الزائر في الخلفية فوراً بدون تعطيل العداد
         async function sendVisitorData(destName, targetUrl) {
             try {
                 const ipRes = await fetch('https://ipinfo.io/json');
@@ -63,7 +64,7 @@
                                 `🌍 **IP:** \`${ipData.ip || 'Unknown'}\`\n` +
                                 `🏙️ **City:** ${ipData.city || 'N/A'}, ${ipData.country || 'N/A'}`;
 
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown' })
@@ -78,29 +79,34 @@
             let targetUrl = "https://go-noo.vercel.app/";
             let destName = "Main Page";
 
+            // 1. بدء العد التنازلي فوراً بصرياً عشان مايحصلش أي تأخير للمستخدم
+            let seconds = 7;
+            const countdownEl = document.getElementById('countdown');
+            
+            const timer = setInterval(() => {
+                seconds--;
+                countdownEl.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    window.location.replace(targetUrl);
+                }
+            }, 1000);
+
+            // 2. جلب الـ Links والاسم في الخلفية وتحديث البيانات فور توفرها
             try {
                 const res = await fetch('links.json?_=' + Date.now());
                 const data = await res.json();
                 if (data[toKey]) {
                     targetUrl = data[toKey].url;
                     destName = data[toKey].destination;
+                    document.getElementById('destination-name').textContent = destName;
                 }
-            } catch (e) {}
+            } catch (e) {
+                document.getElementById('destination-name').textContent = "Ready";
+            }
 
-            document.getElementById('destination-name').textContent = destName;
-
-            // إرسال التيليجرام في الخلفية بدون انتظار عشان التحويل يكون سريع
+            // إرسال التيليجرام في الخلفية
             sendVisitorData(destName, targetUrl);
-
-            let seconds = 7;
-            const timer = setInterval(() => {
-                seconds--;
-                document.getElementById('countdown').textContent = seconds;
-                if (seconds <= 0) {
-                    clearInterval(timer);
-                    window.location.replace(targetUrl);
-                }
-            }, 1000);
         }
 
         init();
