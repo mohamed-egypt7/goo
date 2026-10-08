@@ -8,3 +8,7 @@
     "url": "https://payment-mohamed.vercel.app/"
   }
 }
+  "ipn6": {
+    "destination": "Insta6pay",
+    "url": "https://ipnjmohamed_yasser"
+  },
