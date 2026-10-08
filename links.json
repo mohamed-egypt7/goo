@@ -1,14 +1,42 @@
 {
-  "ipn": {
-    "destination": "Instapay",
-    "url": "https://ipn.eg/S/mohamed_yasser"
+  "link1": {
+    "destination": "Destination 1",
+    "url": "https://example.com/1"
   },
-  "payment": {
-    "destination": "Payment Page",
-    "url": "https://payment-mohamed.vercel.app/"
+  "link2": {
+    "destination": "Destination 2",
+    "url": "https://example.com/2"
+  },
+  "link3": {
+    "destination": "Destination 3",
+    "url": "https://example.com/3"
+  },
+  "link4": {
+    "destination": "Destination 4",
+    "url": "https://example.com/4"
+  },
+  "link5": {
+    "destination": "Destination 5",
+    "url": "https://example.com/5"
+  },
+  "link6": {
+    "destination": "Destination 6",
+    "url": "https://example.com/6"
+  },
+  "link7": {
+    "destination": "Destination 7",
+    "url": "https://example.com/7"
+  },
+  "link8": {
+    "destination": "Destination 8",
+    "url": "https://example.com/8"
+  },
+  "link9": {
+    "destination": "Destination 9",
+    "url": "https://example.com/9"
+  },
+  "link10": {
+    "destination": "Destination 10",
+    "url": "https://example.com/10"
   }
 }
-  "ipn6": {
-    "destination": "Insta6pay",
-    "url": "https://github.com/mohamed-egypt7/goo/blob/main/links.json"
-  },
