@@ -1,1 +1,10 @@
-
+{
+  "ipn": {
+    "destination": "Instapay",
+    "url": "https://ipn.eg/S/mohamed_yasser"
+  },
+  "payment": {
+    "destination": "Payment Page",
+    "url": "https://payment-mohamed.vercel.app/"
+  }
+}
